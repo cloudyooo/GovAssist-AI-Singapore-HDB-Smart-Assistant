@@ -482,6 +482,8 @@ st.warning("""
 
 • Users should verify important housing, eligibility and financial
   information through official HDB and CPF channels.
+
+• Implement live retrieval from official HDB and CPF sources
 """)
 
 st.divider()
@@ -494,19 +496,8 @@ st.divider()
 st.header("1️⃣2️⃣ Future Enhancements")
 
 future = [
-    "Implement semantic retrieval using embeddings.",
-
-    "Introduce vector database search for improved information retrieval.",
-
-    "Implement live retrieval from official HDB and CPF sources.",
-
-    "Automatically update the knowledge base when official information changes.",
 
     "Expand the knowledge base with additional official government information.",
-
-    "Improve source citations and traceability of AI-generated responses.",
-
-    "Generate downloadable PDF assessment reports.",
 
     "Support additional Singapore government services.",
 
