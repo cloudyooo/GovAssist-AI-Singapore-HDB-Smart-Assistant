@@ -184,12 +184,10 @@ st.divider()
 
 st.header("5️⃣ AI Design")
 
-st.subheader("Current Version")
-
 st.write("""
-The current system includes:
+The current AI Housing Advisor includes:
 
-- OpenAI GPT integration
+- OpenAI GPT-4.1-mini integration
 - Basic Retrieval-Augmented Generation (RAG)
 - Keyword-based knowledge retrieval
 - Local knowledge base containing information sourced from
@@ -198,20 +196,6 @@ The current system includes:
 - Session-aware responses
 - Rule-based eligibility and grant assessment
 - Domain restriction to HDB and CPF housing-related topics
-""")
-
-st.subheader("Future Enhancements")
-
-st.write("""
-Future enhancements may include:
-
-- Live retrieval from official HDB and CPF websites
-- Semantic retrieval using embeddings
-- Vector database integration
-- Automatic updating of government information
-- Larger official document knowledge base
-- Improved source citations and traceability
-- Support for additional Singapore government services
 """)
 
 st.divider()
@@ -295,7 +279,7 @@ Local Knowledge Base
              |
              v
 +-------------------------+
-| OpenAI GPT              |
+| OpenAI GPT-4.1-mini     |
 +------------+------------+
              |
              v
@@ -371,7 +355,7 @@ st.divider()
 st.header("8️⃣ Large Language Model (LLM)")
 
 st.write("""
-The AI Housing Advisor integrates an OpenAI GPT language model
+The AI Housing Advisor integrates OpenAI GPT-4.1-mini
 to generate conversational responses.
 
 The LLM acts as the **generation component** of the RAG
@@ -388,7 +372,7 @@ Retrieved HDB / CPF Context
        User Question
             |
             v
-       OpenAI GPT
+   OpenAI GPT-4.1-mini
             |
             v
 Natural-Language Response
@@ -482,8 +466,6 @@ st.warning("""
 
 • Users should verify important housing, eligibility and financial
   information through official HDB and CPF channels.
-
-• Implement live retrieval from official HDB and CPF sources
 """)
 
 st.divider()
@@ -496,8 +478,17 @@ st.divider()
 st.header("1️⃣2️⃣ Future Enhancements")
 
 future = [
+    "Implement live retrieval from official HDB and CPF sources.",
+
+    "Implement semantic retrieval using embeddings.",
+
+    "Introduce vector database search for improved information retrieval.",
+
+    "Automatically update the knowledge base when official information changes.",
 
     "Expand the knowledge base with additional official government information.",
+
+    "Improve source citations and traceability of AI-generated responses.",
 
     "Support additional Singapore government services.",
 
@@ -529,8 +520,8 @@ The AI Housing Advisor uses keyword-based retrieval to identify
 relevant information from a local knowledge base containing
 housing information sourced from official HDB and CPF websites.
 
-The retrieved information is provided to OpenAI GPT as context
-before the model generates a natural-language response.
+The retrieved information is provided to OpenAI GPT-4.1-mini
+as context before the model generates a natural-language response.
 
 The current prototype therefore combines rule-based assessment,
 keyword-based RAG, OpenAI GPT and Streamlit Session State.
