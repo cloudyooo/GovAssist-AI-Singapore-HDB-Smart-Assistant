@@ -52,8 +52,11 @@ st.divider()
 st.header("2️⃣ System Architecture")
 
 st.write("""
-The application combines rule-based decision support with
-an AI-powered housing chatbot.
+The Singapore HDB Smart Assistant combines a rule-based
+eligibility assessment system with an AI-powered housing advisor.
+
+The AI Housing Advisor uses a basic keyword-based
+Retrieval-Augmented Generation (RAG) architecture.
 """)
 
 st.code("""
@@ -115,23 +118,23 @@ st.header("3️⃣ Application Workflow")
 workflow = [
     "User enters personal and household information into the Eligibility & Grant Advisor.",
 
-    "The rule-based eligibility engine performs an advisory HDB eligibility and grant assessment.",
+    "The rule-based eligibility engine performs an advisory eligibility and grant assessment.",
 
     "Assessment results are stored using Streamlit Session State.",
 
-    "The Dashboard visualises relevant assessment results.",
+    "The Dashboard visualises the assessment results.",
 
     "The user can ask housing-related questions through the AI Housing Advisor.",
 
-    "The RAG component performs keyword matching to retrieve relevant information from the local HDB/CPF knowledge base.",
+    "The RAG component uses keyword matching to retrieve relevant information from the local HDB/CPF knowledge base.",
 
     "The retrieved information is added to the AI prompt as supporting context.",
 
-    "The retrieved context and user's question are sent to the OpenAI language model.",
+    "The retrieved context and user's question are sent to OpenAI GPT.",
 
     "OpenAI GPT generates a natural-language response based primarily on the retrieved information.",
 
-    "Where relevant, existing eligibility information stored in Session State is also provided to the AI for a more personalised response.",
+    "Relevant eligibility information stored in Session State may also be provided to the AI to support more personalised responses.",
 
     "Users are encouraged to verify important information using official HDB and CPF sources."
 ]
@@ -155,21 +158,21 @@ Primary Official Sources
 
 • Central Provident Fund (CPF)
 
-The application's housing knowledge is sourced from publicly
-available information on official HDB and CPF websites.
-
-Relevant information is stored in a local knowledge base within
-the application and is retrieved when users submit housing-related
-questions.
+The housing information used in the application's knowledge base
+is sourced from publicly available information on the official
+HDB and CPF websites.
 """)
 
 st.write("""
-The current implementation does **not perform live retrieval**
-from the HDB or CPF websites whenever a question is asked.
+The relevant housing information is stored within the application's
+local knowledge base.
+
+The current version does **not retrieve information live from the
+HDB or CPF websites each time a user submits a question**.
 
 Instead, information sourced from the official websites is stored
-within the application's local knowledge base for retrieval by
-the AI Housing Advisor.
+locally and retrieved by the RAG component when relevant to the
+user's question.
 """)
 
 st.divider()
@@ -184,43 +187,30 @@ st.header("5️⃣ AI Design")
 st.subheader("Current Version")
 
 st.write("""
-The current AI Housing Advisor includes:
+The current system includes:
 
 - OpenAI GPT integration
-
-- Retrieval-Augmented Generation (RAG)
-
+- Basic Retrieval-Augmented Generation (RAG)
 - Keyword-based knowledge retrieval
-
 - Local knowledge base containing information sourced from
   official HDB and CPF websites
-
 - Natural-language question answering
-
 - Session-aware responses
-
 - Rule-based eligibility and grant assessment
-
 - Domain restriction to HDB and CPF housing-related topics
 """)
 
-st.subheader("Future Version")
+st.subheader("Future Enhancements")
 
 st.write("""
 Future enhancements may include:
 
+- Live retrieval from official HDB and CPF websites
 - Semantic retrieval using embeddings
-
 - Vector database integration
-
-- Live retrieval of official HDB and CPF information
-
 - Automatic updating of government information
-
 - Larger official document knowledge base
-
-- Improved document-level source citations
-
+- Improved source citations and traceability
 - Support for additional Singapore government services
 """)
 
@@ -238,12 +228,14 @@ The AI Housing Advisor uses a **basic keyword-based
 Retrieval-Augmented Generation (RAG)** approach.
 
 RAG combines information retrieval with a Large Language Model
-(LLM). Instead of relying only on the language model's general
-knowledge, the system first retrieves relevant information from
-the application's housing knowledge base.
+(LLM).
+
+Instead of relying only on the language model's general knowledge,
+the system first retrieves relevant information from the
+application's local HDB/CPF knowledge base.
 """)
 
-st.subheader("How RAG Works in GovAssist AI")
+st.subheader("How RAG Works")
 
 rag_steps = [
     "The user submits an HDB or CPF housing-related question.",
@@ -252,13 +244,13 @@ rag_steps = [
 
     "Relevant information is retrieved from the local HDB/CPF knowledge base.",
 
-    "The retrieved information is added to the system prompt as context.",
+    "The retrieved information is added to the AI system prompt as context.",
 
-    "The user's question and retrieved context are sent to OpenAI GPT.",
+    "The retrieved context and user's question are sent to OpenAI GPT.",
 
     "The language model generates a natural-language response based primarily on the retrieved information.",
 
-    "The chatbot displays the generated response and identifies the relevant knowledge source."
+    "The chatbot displays the generated response together with the relevant knowledge source."
 ]
 
 for step in rag_steps:
@@ -267,26 +259,49 @@ for step in rag_steps:
 st.subheader("RAG Workflow")
 
 st.code("""
-User Question
-      |
-      v
-Keyword Matching
-      |
-      v
+Official HDB / CPF Websites
+           |
+           v
+Information Sourced for
 Local Knowledge Base
-(HDB / CPF Information)
-      |
-      v
-Relevant Information Retrieved
-      |
-      v
-Retrieved Context + User Question
-      |
-      v
-OpenAI GPT
-      |
-      v
-Generated Housing Response
+           |
+           v
++-------------------------+
+| User Housing Question   |
++------------+------------+
+             |
+             v
++-------------------------+
+| Keyword-Based Retrieval |
++------------+------------+
+             |
+             v
++-------------------------+
+| Local HDB / CPF         |
+| Knowledge Base          |
++------------+------------+
+             |
+             v
++-------------------------+
+| Relevant Context        |
+| Retrieved               |
++------------+------------+
+             |
+             v
++-------------------------+
+| Retrieved Context +     |
+| User Question           |
++------------+------------+
+             |
+             v
++-------------------------+
+| OpenAI GPT              |
++------------+------------+
+             |
+             v
++-------------------------+
+| Generated Response      |
++-------------------------+
 """)
 
 st.info("""
@@ -294,24 +309,24 @@ The current RAG implementation uses keyword matching rather
 than embeddings or vector similarity search.
 
 This provides a simple and explainable RAG implementation
-suitable for the current prototype.
+for the current prototype.
 """)
 
 st.divider()
 
 
 # ==========================================================
-# 7. Rule-Based Eligibility Engine
+# 7. Rule-Based Eligibility & Grant Advisor
 # ==========================================================
 
-st.header("7️⃣ Rule-Based Eligibility Engine")
+st.header("7️⃣ Rule-Based Eligibility & Grant Advisor")
 
 st.write("""
-The Eligibility & Grant Advisor operates separately from the
-RAG chatbot.
+The Eligibility & Grant Advisor operates alongside the
+RAG-based AI Housing Advisor.
 
-It uses predefined Python rules to perform an advisory assessment
-based on user inputs such as:
+It uses predefined Python rules to perform an advisory
+assessment based on user inputs such as:
 
 - Citizenship
 - Age
@@ -321,8 +336,8 @@ based on user inputs such as:
 - Property ownership
 - Proximity to parents or children
 
-The results are stored in Streamlit Session State and can be used
-by other parts of the application, including the AI Housing Advisor.
+The results can be stored in Streamlit Session State and
+shared with other parts of the application.
 """)
 
 st.code("""
@@ -340,9 +355,9 @@ Grant Estimation
        v
 Streamlit Session State
        |
-       +--------------------+
-       |                    |
-       v                    v
+       +---------------------+
+       |                     |
+       v                     v
    Dashboard          AI Housing Advisor
 """)
 
@@ -359,24 +374,23 @@ st.write("""
 The AI Housing Advisor integrates an OpenAI GPT language model
 to generate conversational responses.
 
-The LLM is responsible for converting the retrieved housing
-information into clear natural-language answers.
+The LLM acts as the **generation component** of the RAG
+architecture.
 
-The LLM therefore acts as the **generation component** of the
-RAG architecture.
+Relevant HDB/CPF information is retrieved first and supplied
+to the language model as context before the response is
+generated.
 """)
 
 st.code("""
-Retrieval
-   +
 Retrieved HDB / CPF Context
-   +
-User Question
-   |
-   v
-OpenAI GPT
-   |
-   v
+            +
+       User Question
+            |
+            v
+       OpenAI GPT
+            |
+            v
 Natural-Language Response
 """)
 
@@ -397,21 +411,21 @@ For example, after a user completes the Eligibility & Grant
 Advisor, information such as the eligibility result, estimated
 grant and household income can be stored in Session State.
 
-The AI Housing Advisor can use this information when it is
-relevant to the user's question.
+The AI Housing Advisor can use this information when relevant
+to the user's housing question.
 """)
 
 st.code("""
 Eligibility & Grant Advisor
-          |
-          v
-   Session State
-          |
-          v
- AI Housing Advisor
-          |
-          v
-More Context-Aware Response
+           |
+           v
+    Session State
+           |
+           v
+   AI Housing Advisor
+           |
+           v
+Context-Aware AI Response
 """)
 
 st.divider()
@@ -425,18 +439,19 @@ st.header("🔟 Technologies")
 
 tech = {
     "Programming Language": "Python",
-    "Web Application Framework": "Streamlit",
+    "Web Framework": "Streamlit",
     "Data Processing": "Pandas",
     "Data Visualisation": "Plotly",
-    "Large Language Model": "OpenAI GPT",
-    "RAG Retrieval Method": "Keyword-based retrieval",
-    "Knowledge Base": "HDB / CPF information stored locally",
+    "Large Language Model": "OpenAI GPT-4.1-mini",
+    "AI Architecture": "Retrieval-Augmented Generation (RAG)",
+    "Retrieval Method": "Keyword-based retrieval",
+    "Knowledge Base": "Locally stored HDB / CPF information",
     "State Management": "Streamlit Session State",
     "IDE": "Visual Studio Code",
     "Version Control": "Git & GitHub"
 }
 
-for key, value in tech.items:
+for key, value in tech.items():
     st.write(f"**{key}:** {value}")
 
 st.divider()
@@ -462,8 +477,8 @@ st.warning("""
 • The local knowledge base must be manually updated when relevant
   government information changes.
 
-• AI-generated responses may contain incomplete or incorrect
-  information if the retrieved context is insufficient.
+• AI-generated responses may be incomplete if the retrieved
+  information is insufficient.
 
 • Users should verify important housing, eligibility and financial
   information through official HDB and CPF channels.
@@ -481,13 +496,15 @@ st.header("1️⃣2️⃣ Future Enhancements")
 future = [
     "Implement semantic retrieval using embeddings.",
 
-    "Introduce vector database search for improved document retrieval.",
+    "Introduce vector database search for improved information retrieval.",
 
-    "Automatically retrieve updated information from official HDB and CPF sources.",
+    "Implement live retrieval from official HDB and CPF sources.",
 
-    "Expand the knowledge base with additional official government documents.",
+    "Automatically update the knowledge base when official information changes.",
 
-    "Improve source citation and traceability of AI-generated responses.",
+    "Expand the knowledge base with additional official government information.",
+
+    "Improve source citations and traceability of AI-generated responses.",
 
     "Generate downloadable PDF assessment reports.",
 
@@ -510,19 +527,22 @@ st.header("1️⃣3️⃣ Conclusion")
 
 st.info("""
 The Singapore HDB Smart Assistant demonstrates how rule-based
-decision support, Retrieval-Augmented Generation (RAG) and Large
-Language Models (LLMs) can be combined within a Streamlit application
-to provide housing-related educational guidance.
+decision support, Retrieval-Augmented Generation (RAG) and
+Large Language Models (LLMs) can be combined within a Streamlit
+application to provide housing-related educational guidance.
 
 The Eligibility & Grant Advisor uses predefined rules to provide
-an advisory assessment.
+an advisory eligibility and grant assessment.
 
 The AI Housing Advisor uses keyword-based retrieval to identify
 relevant information from a local knowledge base containing
-information sourced from official HDB and CPF websites.
+housing information sourced from official HDB and CPF websites.
 
-The retrieved information is then provided to OpenAI GPT as context
-to generate a natural-language response.
+The retrieved information is provided to OpenAI GPT as context
+before the model generates a natural-language response.
+
+The current prototype therefore combines rule-based assessment,
+keyword-based RAG, OpenAI GPT and Streamlit Session State.
 
 The system is intended for educational purposes and complements,
 rather than replaces, official government services.
