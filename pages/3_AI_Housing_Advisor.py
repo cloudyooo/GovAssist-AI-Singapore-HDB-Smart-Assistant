@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import os
 import re
 
+
 # ==========================================================
 # Environment / OpenAI
 # ==========================================================
@@ -13,6 +14,7 @@ load_dotenv()
 client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY")
 )
+
 
 # ==========================================================
 # Page Configuration
@@ -29,11 +31,14 @@ st.title("🤖 AI Housing Advisor")
 st.markdown("""
 Ask questions about:
 
-- HDB Resale Eligibility
+- HDB flat eligibility
+- Flat types and housing options
+- Singles housing options
 - HFE Letter
 - CPF Housing Grants
-- Buying Process
-- Housing Schemes
+- CPF usage for housing
+- HDB resale flats
+- HDB buying process
 
 This assistant uses **Retrieval-Augmented Generation (RAG)**
 to retrieve relevant HDB/CPF knowledge before generating
@@ -42,6 +47,7 @@ an AI response.
 
 st.divider()
 
+
 # ==========================================================
 # Session State
 # ==========================================================
@@ -49,186 +55,597 @@ st.divider()
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
 # ==========================================================
-# HDB / CPF Knowledge Base
+# HDB / CPF RAG Knowledge Base
 # ==========================================================
 #
-# This is a curated local knowledge base based on
-# publicly available HDB and CPF information.
+# Information below is based on publicly available official
+# HDB and CPF information.
 #
-# The RAG retrieval function searches this knowledge base
-# before sending relevant information to the LLM.
+# Each knowledge item contains:
 #
+# - keywords
+# - content
+# - source
+# - source_url
+#
+# The RAG system retrieves relevant items before sending
+# them to OpenAI GPT.
+#
+# ==========================================================
 
 knowledge = {
 
+
+    # ======================================================
+    # HFE LETTER
+    # ======================================================
+
     "hfe": {
+
         "keywords": [
             "hfe",
             "hfe letter",
             "flat eligibility",
-            "housing loan"
+            "housing eligibility",
+            "housing loan",
+            "eligible for hdb",
+            "can i buy hdb"
         ],
 
         "content": """
 The HDB Flat Eligibility (HFE) Letter provides an integrated
-assessment of a household's eligibility to:
+assessment of a household's housing and financing options.
 
-- Buy an HDB flat
-- Receive CPF Housing Grants
-- Obtain an HDB housing loan
+The HFE assessment can inform applicants about matters such as:
 
-Prospective flat buyers should obtain an HFE Letter before
-committing to an HDB flat purchase.
+- Eligibility to buy a new or resale HDB flat
+- Eligibility for applicable CPF Housing Grants
+- Eligibility for an HDB housing loan
+
+Prospective buyers should obtain an HFE Letter for an official
+assessment before committing to a flat purchase.
 """,
 
-        "source": "Housing & Development Board (HDB)"
+        "source": "Housing & Development Board (HDB)",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility"
     },
 
-    "grant": {
+
+    # ======================================================
+    # SINGLES - GENERAL ELIGIBILITY
+    # ======================================================
+
+    "single_eligibility": {
+
+        "keywords": [
+            "single",
+            "singles",
+            "unmarried",
+            "single singapore citizen",
+            "single citizen",
+            "single sc",
+            "35",
+            "36",
+            "37",
+            "38",
+            "39",
+            "40",
+            "single hdb",
+            "single buy hdb",
+            "single eligibility",
+            "single flat"
+        ],
+
+        "content": """
+For a Singapore Citizen buying a flat alone:
+
+An unmarried or divorced Singapore Citizen generally needs
+to be at least 35 years old to buy under the applicable
+singles eligibility conditions.
+
+A single applicant may potentially:
+
+NEW FLAT
+- Apply for a 2-room Flexi flat from HDB, subject to the
+  applicable eligibility requirements.
+
+RESALE FLAT
+- Buy an eligible resale flat on the open market, subject
+  to HDB's applicable eligibility conditions.
+
+The exact options depend on matters such as:
+
+- Citizenship
+- Age
+- Income
+- Property ownership
+- Flat classification
+- Whether CPF Housing Grants are being used
+- Other prevailing HDB conditions
+
+Applicants should obtain an HFE Letter for an official
+assessment of their housing, grant and loan eligibility.
+""",
+
+        "source": "HDB - Singles",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility/singles"
+    },
+
+
+    # ======================================================
+    # SINGLES - FLAT TYPES / SIZE
+    # ======================================================
+
+    "single_flat_options": {
+
+        "keywords": [
+            "flat size",
+            "flat sizes",
+            "flat type",
+            "flat types",
+            "what flat can i buy",
+            "which flat can i buy",
+            "what hdb can i buy",
+            "what can i buy",
+            "how many room",
+            "room flat",
+            "2 room",
+            "2-room",
+            "3 room",
+            "3-room",
+            "4 room",
+            "4-room",
+            "5 room",
+            "5-room",
+            "executive",
+            "3gen",
+            "single flat size",
+            "single flat type",
+            "single resale",
+            "single bto",
+            "single new flat"
+        ],
+
+        "content": """
+HDB provides different housing options for eligible singles
+buying on their own.
+
+NEW FLATS
+
+Eligible singles may apply for:
+
+- 2-room Flexi flats
+
+Eligible singles may apply for 2-room Flexi flats under the
+Standard, Plus and Prime classifications, subject to the
+applicable HDB eligibility requirements.
+
+RESALE FLATS
+
+For resale unclassified, Standard and Plus flats:
+
+- Eligible singles may generally buy all flat types
+  except 3Gen flats.
+
+However, HDB notes that where the single applicant is applying
+for CPF Housing Grants, the applicable resale flat option is
+up to a 5-room flat.
+
+For resale Prime flats:
+
+- The applicable flat type for a single buying alone is
+  generally a 2-room flat, subject to HDB's prevailing
+  Prime flat eligibility requirements.
+
+Therefore, the available flat size depends on whether the
+applicant is buying:
+
+1. A new flat
+2. A resale Prime flat
+3. A resale Standard, Plus or unclassified flat
+4. With or without applicable CPF Housing Grants
+
+Applicants should obtain an HFE Letter for an official
+assessment before making a housing decision.
+""",
+
+        "source": "HDB - Singles",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility/singles"
+    },
+
+
+    # ======================================================
+    # STANDARD / PLUS / PRIME
+    # ======================================================
+
+    "flat_classification": {
+
+        "keywords": [
+            "standard",
+            "plus",
+            "prime",
+            "standard flat",
+            "plus flat",
+            "prime flat",
+            "classification",
+            "flat classification",
+            "standard plus prime"
+        ],
+
+        "content": """
+HDB introduced the Standard, Plus and Prime housing framework.
+
+For eligible singles:
+
+NEW FLATS
+
+Singles may apply for a 2-room Flexi flat under:
+
+- Standard
+- Plus
+- Prime
+
+RESALE FLATS
+
+Singles may potentially buy:
+
+- A 2-room Prime resale flat
+- All flat types except 3Gen under Standard, Plus and
+  existing unclassified resale flats
+
+Different eligibility, subsidy and resale conditions may apply
+depending on the flat classification.
+
+Applicants should verify the applicable conditions with HDB.
+""",
+
+        "source": "HDB - Standard, Plus and Prime Housing Framework",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "bto-sbf-and-open-booking-of-flats/"
+            "finding-a-new-flat/"
+            "standard-plus-and-prime-housing-framework"
+    },
+
+
+    # ======================================================
+    # SINGLES GRANT
+    # ======================================================
+
+    "single_resale_grant": {
+
+        "keywords": [
+            "single grant",
+            "singles grant",
+            "grant for single",
+            "grant for singles",
+            "resale grant",
+            "cpf housing grant",
+            "single cpf grant",
+            "single resale grant",
+            "how much grant",
+            "grant amount",
+            "40000",
+            "25000"
+        ],
+
+        "content": """
+Eligible first-timer Singapore Citizens buying a resale flat
+on their own may qualify for the Singles Grant.
+
+Based on current HDB information:
+
+- $40,000 Singles Grant may apply for an eligible
+  2- to 4-room resale flat.
+
+- $25,000 Singles Grant may apply for an eligible
+  5-room resale flat.
+
+The applicant must satisfy the applicable HDB eligibility
+conditions.
+
+Eligible applicants may potentially also qualify for other
+housing grants such as:
+
+- Enhanced CPF Housing Grant (Singles)
+- Proximity Housing Grant (Singles)
+
+Each grant has its own eligibility requirements.
+
+Applicants should use the HFE Letter for an official assessment
+of the grants they may receive.
+""",
+
+        "source": "HDB - CPF Housing Grant for Singles Buying Resale Flats",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility/singles/"
+            "cpf-housing-grant"
+    },
+
+
+    # ======================================================
+    # GENERAL GRANTS
+    # ======================================================
+
+    "grants": {
+
         "keywords": [
             "grant",
             "grants",
             "housing grant",
             "cpf grant",
+            "cpf housing grant",
             "ehg",
             "phg",
             "enhanced cpf housing grant",
-            "proximity housing grant"
+            "proximity housing grant",
+            "housing grants"
         ],
 
         "content": """
-Eligible HDB resale flat buyers may qualify for CPF Housing
-Grants.
+Eligible HDB buyers may potentially qualify for CPF Housing
+Grants depending on their applicant profile and the type of
+flat being purchased.
 
 Examples include:
 
 - Enhanced CPF Housing Grant (EHG)
+- CPF Housing Grant for eligible resale flat buyers
 - Proximity Housing Grant (PHG)
 
-Actual eligibility and grant amounts depend on factors such
-as household income, applicant profile and prevailing
-HDB/CPF conditions.
+Eligibility and grant amounts depend on the applicable HDB
+conditions, such as:
+
+- Household income
+- Applicant profile
+- First-timer status
+- Flat type
+- Family circumstances
+- Proximity conditions
+
+Applicants should obtain an HFE Letter for an official
+assessment of applicable grants.
 """,
 
-        "source": "HDB / Central Provident Fund (CPF)"
+        "source": "Housing & Development Board (HDB)",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility"
     },
 
-    "cpf": {
+
+    # ======================================================
+    # CPF - USING OA FOR HOUSING
+    # ======================================================
+
+    "cpf_housing": {
+
         "keywords": [
             "cpf",
-            "ordinary account",
             "cpf oa",
+            "ordinary account",
+            "oa savings",
             "cpf savings",
-            "finance",
-            "financing"
+            "use cpf",
+            "cpf housing",
+            "cpf payment",
+            "cpf loan",
+            "downpayment",
+            "monthly instalment",
+            "housing payment"
         ],
 
         "content": """
-CPF Ordinary Account savings may be used to finance the
-purchase of an HDB resale flat, subject to prevailing CPF
-and HDB rules.
+CPF Ordinary Account (OA) savings may be used for eligible
+housing-related payments.
 
-CPF savings may potentially be used for eligible housing
-payments, including housing loan repayments, subject to
-applicable conditions.
+Depending on the applicable CPF rules, OA savings may be used
+for purposes such as:
+
+- Purchasing an HDB flat
+- Eligible downpayment
+- Housing loan payments
+- Eligible stamp and legal fees
+- Home Protection Scheme premiums for applicable HDB flats
+
+There are limits on how much CPF OA savings may be used for
+a property.
+
+The amount that can be used may depend on factors such as:
+
+- Remaining lease of the property
+- Property type
+- Loan type
+- Whether it is the first or a subsequent property
+
+Applicants should check their applicable CPF housing usage
+limits before committing to a purchase.
 """,
 
-        "source": "Central Provident Fund (CPF)"
+        "source": "Central Provident Fund Board (CPFB) - Using CPF to Buy a Home",
+
+        "source_url":
+            "https://www.cpf.gov.sg/member/home-ownership/"
+            "using-your-cpf-to-buy-a-home"
     },
 
-    "single": {
+
+    # ======================================================
+    # CPF HOUSING USAGE LIMITS
+    # ======================================================
+
+    "cpf_usage_limits": {
+
         "keywords": [
-            "single",
-            "singles",
-            "unmarried",
-            "35",
-            "36",
-            "single singapore citizen",
-            "single citizen"
+            "cpf limit",
+            "cpf limits",
+            "housing limit",
+            "housing limits",
+            "how much cpf",
+            "how much oa",
+            "cpf usage",
+            "cpf housing usage",
+            "cpf calculator",
+            "housing usage calculator"
         ],
 
         "content": """
-Singapore Citizens who are single and at least 35 years old
-may generally purchase an HDB resale flat under the
-applicable eligibility scheme, subject to prevailing HDB
-conditions.
+The amount of CPF Ordinary Account savings that can be used
+for a property purchase is subject to CPF housing rules.
 
-Other eligibility requirements may still apply, including
-citizenship, property ownership and other HDB requirements.
+The applicable amount may depend on factors including:
+
+- Remaining lease of the property
+- Type of property
+- Loan type
+- Whether the property is the buyer's first or subsequent
+  property
+
+CPF provides a Housing Usage Calculator that can help members
+estimate the amount of OA savings that may be used for an
+eligible property purchase.
 """,
 
-        "source": "Housing & Development Board (HDB)"
+        "source": "Central Provident Fund Board (CPFB) - CPF Housing Usage",
+
+        "source_url":
+            "https://www.cpf.gov.sg/member/tools-and-services/"
+            "calculators/cpf-housing-usage"
     },
 
-    "eligibility": {
+
+    # ======================================================
+    # GENERAL RESALE ELIGIBILITY
+    # ======================================================
+
+    "resale_eligibility": {
+
         "keywords": [
-            "eligible",
-            "eligibility",
-            "qualify",
-            "qualification",
-            "can i buy",
-            "allowed to buy",
-            "buy hdb"
+            "resale",
+            "resale flat",
+            "buy resale",
+            "resale eligibility",
+            "eligible resale",
+            "resale hdb",
+            "can i buy resale"
         ],
 
         "content": """
-Eligibility to purchase an HDB resale flat depends on
-several factors.
+Eligibility to purchase an HDB resale flat depends on the
+applicant's circumstances and the applicable HDB rules.
 
-These may include:
+Relevant considerations may include:
 
 - Citizenship
 - Age
-- Family nucleus
-- Applicant type
-- Ownership of other residential property
-- Other prevailing HDB requirements
+- Applicant or household type
+- Flat classification
+- Property ownership
+- Whether CPF Housing Grants are being used
+- Other prevailing HDB eligibility conditions
 
-An HFE assessment should be used for an official
-determination.
+Singles aged 35 and above who are Singapore Citizens may
+potentially purchase eligible resale flats on their own,
+subject to the applicable HDB conditions.
+
+An HFE Letter should be obtained for an official assessment.
 """,
 
-        "source": "Housing & Development Board (HDB)"
+        "source": "Housing & Development Board (HDB)",
+
+        "source_url":
+            "https://www.hdb.gov.sg/buying-a-flat/"
+            "flat-grant-and-loan-eligibility/singles"
     },
 
-    "resale": {
+
+    # ======================================================
+    # RESALE BUYING PROCESS
+    # ======================================================
+
+    "resale_process": {
+
         "keywords": [
-            "resale",
             "resale process",
-            "buy resale",
             "buying process",
+            "buy resale",
+            "buy resale flat",
+            "resale steps",
             "purchase process",
-            "steps",
-            "buy flat"
+            "how to buy",
+            "steps to buy",
+            "buy hdb resale"
         ],
 
         "content": """
-The HDB resale purchasing journey generally involves:
+The HDB resale purchasing journey generally includes:
 
-1. Obtain an HFE Letter.
-2. Search for a suitable resale flat.
-3. Negotiate with the seller and follow the required
-   resale procedures.
-4. Complete the required valuation and resale application
-   processes.
-5. Complete the resale transaction.
+1. Understand your eligibility and finances.
+2. Obtain an HFE Letter.
+3. Search for a suitable resale flat.
+4. Negotiate with the seller.
+5. Follow the applicable HDB resale procedures.
+6. Complete the required resale application processes.
+7. Complete the resale transaction.
 
-The exact process should be verified using current HDB
-guidance.
+Applicants should refer to HDB's current resale procedures
+for the exact requirements and sequence.
 """,
 
-        "source": "Housing & Development Board (HDB)"
+        "source": "Housing & Development Board (HDB)",
+
+        "source_url":
+            "https://www.hdb.gov.sg/residential/"
+            "buying-a-flat/buying-procedure-for-resale-flats"
     }
 }
+
+
+# ==========================================================
+# RAG - Text Normalisation
+# ==========================================================
+
+def normalise_text(text):
+
+    text = text.lower()
+
+    text = re.sub(
+        r"[^a-zA-Z0-9\s-]",
+        " ",
+        text
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text
+    )
+
+    return text.strip()
+
 
 # ==========================================================
 # RAG - Retrieval Function
 # ==========================================================
 
-def retrieve_knowledge(question, max_results=3):
+def retrieve_knowledge(question, max_results=4):
 
-    question_lower = question.lower()
+    question_lower = normalise_text(question)
 
     question_words = set(
         re.findall(
@@ -245,13 +662,19 @@ def retrieve_knowledge(question, max_results=3):
 
         for keyword in data["keywords"]:
 
-            keyword_lower = keyword.lower()
+            keyword_lower = normalise_text(keyword)
 
-            # Higher score for complete phrase match
+            # --------------------------------------------------
+            # Strong score for exact phrase
+            # --------------------------------------------------
+
             if keyword_lower in question_lower:
-                score += 3
+                score += 5
 
-            # Additional score for individual word matches
+            # --------------------------------------------------
+            # Score matching words
+            # --------------------------------------------------
+
             keyword_words = set(
                 re.findall(
                     r"\b[a-zA-Z0-9]+\b",
@@ -259,20 +682,99 @@ def retrieve_knowledge(question, max_results=3):
                 )
             )
 
-            score += len(
-                question_words.intersection(keyword_words)
+            common_words = question_words.intersection(
+                keyword_words
             )
+
+            score += len(common_words)
+
+        # ------------------------------------------------------
+        # Extra relevance rules
+        # ------------------------------------------------------
+
+        # Singles question
+        if any(
+            word in question_lower
+            for word in [
+                "single",
+                "unmarried"
+            ]
+        ):
+
+            if topic in [
+                "single_eligibility",
+                "single_flat_options",
+                "single_resale_grant"
+            ]:
+                score += 5
+
+        # Flat size / option question
+        if any(
+            phrase in question_lower
+            for phrase in [
+                "flat size",
+                "flat type",
+                "what flat",
+                "which flat",
+                "what hdb",
+                "what option",
+                "options",
+                "how many room",
+                "room flat"
+            ]
+        ):
+
+            if topic == "single_flat_options":
+                score += 10
+
+        # Grant question
+        if "grant" in question_lower:
+
+            if topic in [
+                "single_resale_grant",
+                "grants"
+            ]:
+                score += 8
+
+        # CPF question
+        if "cpf" in question_lower:
+
+            if topic in [
+                "cpf_housing",
+                "cpf_usage_limits"
+            ]:
+                score += 8
+
+        # Resale question
+        if "resale" in question_lower:
+
+            if topic in [
+                "resale_eligibility",
+                "resale_process",
+                "single_flat_options",
+                "single_resale_grant"
+            ]:
+                score += 5
 
         if score > 0:
 
             scored_results.append({
+
                 "topic": topic,
+
                 "score": score,
+
                 "content": data["content"],
-                "source": data["source"]
+
+                "source": data["source"],
+
+                "source_url": data["source_url"]
             })
 
-    # Sort highest relevance first
+    # ----------------------------------------------------------
+    # Highest relevance first
+    # ----------------------------------------------------------
+
     scored_results.sort(
         key=lambda x: x["score"],
         reverse=True
@@ -296,18 +798,55 @@ def build_context(retrieved_results):
 
         context_parts.append(
             f"""
-Topic:
+TOPIC:
 {result["topic"]}
 
-Information:
+INFORMATION:
 {result["content"]}
 
-Source:
+OFFICIAL SOURCE:
 {result["source"]}
+
+OFFICIAL URL:
+{result["source_url"]}
 """
         )
 
-    return "\n---\n".join(context_parts)
+    return "\n\n---\n\n".join(
+        context_parts
+    )
+
+
+# ==========================================================
+# RAG - Build Source List
+# ==========================================================
+
+def build_source_list(retrieved_results):
+
+    source_lines = []
+
+    seen = set()
+
+    for result in retrieved_results:
+
+        source = result["source"]
+
+        source_url = result["source_url"]
+
+        source_key = (
+            source,
+            source_url
+        )
+
+        if source_key not in seen:
+
+            seen.add(source_key)
+
+            source_lines.append(
+                f"- [{source}]({source_url})"
+            )
+
+    return "\n".join(source_lines)
 
 
 # ==========================================================
@@ -316,100 +855,162 @@ Source:
 
 def generate_response(question):
 
-    # ------------------------------------------------------
+    # ======================================================
     # RAG STEP 1 - RETRIEVAL
-    # ------------------------------------------------------
+    # ======================================================
 
-    retrieved_results = retrieve_knowledge(question)
+    retrieved_results = retrieve_knowledge(
+        question
+    )
 
-    # If no relevant HDB/CPF knowledge is found
     if not retrieved_results:
 
         return """
-I could not find relevant information in my HDB/CPF
-knowledge base for that question.
+I could not find sufficiently relevant information in my
+HDB/CPF knowledge base for that question.
 
 I currently provide guidance about:
 
-- HDB housing
-- CPF housing
+- HDB flat eligibility
+- Singles housing options
+- HDB flat types
 - HFE Letters
-- Housing grants
-- HDB eligibility
-- HDB resale purchases
+- CPF Housing Grants
+- CPF usage for housing
+- HDB resale flats
+- HDB buying processes
 
 Please ask a question related to HDB or CPF housing.
 """
 
-    # ------------------------------------------------------
+
+    # ======================================================
     # RAG STEP 2 - AUGMENTATION
-    # ------------------------------------------------------
+    # ======================================================
 
     retrieved_context = build_context(
         retrieved_results
     )
+
 
     system_prompt = f"""
 You are GovAssist AI, a Singapore HDB Housing Advisor.
 
 You use Retrieval-Augmented Generation (RAG).
 
-Relevant information has been retrieved from the
-application's HDB/CPF knowledge base.
+Relevant information has already been retrieved from the
+application's curated HDB/CPF knowledge base.
 
-====================================================
-RETRIEVED KNOWLEDGE
-====================================================
+============================================================
+RETRIEVED HDB / CPF KNOWLEDGE
+============================================================
 
 {retrieved_context}
 
-====================================================
+============================================================
 
-INSTRUCTIONS:
+INSTRUCTIONS
 
-1. Answer the user's question primarily using the
-   retrieved knowledge above.
+1. Answer the user's question primarily using the retrieved
+   information above.
 
-2. Do not invent HDB eligibility requirements,
-   grant amounts or housing policies that are not
+2. Do not invent HDB eligibility rules, grant amounts,
+   flat types, CPF rules or housing policies that are not
    supported by the retrieved information.
 
-3. If the retrieved information is insufficient,
-   clearly explain that more information is required.
+3. If the user provides personal details such as:
 
-4. Only answer questions related to:
+   - Age
+   - Citizenship
+   - Single / married status
+   - Household income
+   - First-timer status
+   - Property ownership
 
-   - HDB
-   - CPF Housing
+   use those details together with the retrieved information.
+
+4. If the user asks:
+
+   "What options do I have?"
+   "What flat can I buy?"
+   "What flat size can I buy?"
+
+   clearly explain the relevant options separately.
+
+   Where supported by the retrieved information, organise
+   the answer into:
+
+   NEW FLAT OPTIONS
+   RESALE FLAT OPTIONS
+   POSSIBLE GRANTS
+   CPF / FINANCING
+   NEXT STEP
+
+5. Clearly distinguish between:
+
+   - New flats
+   - Resale flats
+   - Standard flats
+   - Plus flats
+   - Prime flats
+
+   whenever this distinction is relevant.
+
+6. Do not tell the user that they are definitely eligible
+   unless the retrieved information supports a definitive
+   conclusion.
+
+   Use wording such as:
+
+   "Based on the information provided..."
+
+   "You may generally..."
+
+   "Subject to HDB's eligibility conditions..."
+
+7. Explain that the HFE Letter provides the official
+   assessment where relevant.
+
+8. If the retrieved information is insufficient to answer
+   part of the question, say so rather than guessing.
+
+9. Only answer questions related to:
+
+   - HDB housing
+   - CPF housing
    - HFE Letter
-   - HDB Grants
-   - HDB Eligibility
-   - Buying or Selling HDB Flats
-   - Singapore Housing Policies
+   - Housing grants
+   - HDB eligibility
+   - Flat types
+   - HDB resale flats
+   - HDB buying process
+   - Singapore public housing
 
-5. If the user asks about unrelated topics such as
-   IRAS income tax, healthcare or unrelated government
-   services, explain that this assistant only covers
-   HDB and CPF housing topics.
+10. If the question is unrelated to HDB or CPF housing,
+    explain that this assistant focuses on HDB and CPF
+    housing topics.
 
-6. Important eligibility and financial information
-   should always be verified through official HDB
-   and CPF channels.
+11. Keep the response educational and easy to understand.
 
-7. Keep answers clear, educational and concise.
+12. Do not create fake official URLs.
+
+13. Important eligibility, grant and financial information
+    should be verified through the official HDB or CPF
+    websites.
 """
 
-    # ------------------------------------------------------
+
+    # ======================================================
     # Session-Aware Personalisation
-    # ------------------------------------------------------
+    # ======================================================
 
     if "eligibility" in st.session_state:
 
         system_prompt += f"""
 
-====================================================
-USER'S ELIGIBILITY ASSESSMENT
-====================================================
+============================================================
+USER'S EXISTING ELIGIBILITY ASSESSMENT
+============================================================
 
 Eligibility:
 {st.session_state.get("eligibility")}
@@ -426,13 +1027,19 @@ Applicant Type:
 Household Members:
 {st.session_state.get("household_members", "Not available")}
 
-Use this information only when relevant to the
-user's housing question.
+============================================================
+
+Use this information only when relevant to the user's
+housing question.
+
+Do not treat the application's advisory eligibility result
+as an official HDB determination.
 """
 
-    # ------------------------------------------------------
+
+    # ======================================================
     # RAG STEP 3 - GENERATION
-    # ------------------------------------------------------
+    # ======================================================
 
     try:
 
@@ -455,44 +1062,50 @@ user's housing question.
             ],
 
             temperature=0.2
-
         )
 
-        answer = response.choices[0].message.content
 
-        # --------------------------------------------------
-        # Add Retrieved Knowledge Sources
-        # --------------------------------------------------
-
-        sources = sorted(
-            set(
-                result["source"]
-                for result in retrieved_results
-            )
+        answer = (
+            response
+            .choices[0]
+            .message
+            .content
         )
 
-        source_text = "\n".join(
-            f"- {source}"
-            for source in sources
+
+        # ==================================================
+        # Add Official Retrieved References
+        # ==================================================
+
+        source_text = build_source_list(
+            retrieved_results
         )
+
 
         answer += f"""
 
 ---
 
-**Knowledge Sources Retrieved**
+### 📚 Official References Retrieved
 
 {source_text}
 
-*Please verify important eligibility and financial
-information through the official HDB or CPF website.*
+*The answer above is generated using information retrieved
+from the application's HDB/CPF knowledge base. Please verify
+important eligibility, grant and financial information using
+the official HDB or CPF websites.*
 """
+
 
         return answer
 
+
     except Exception as e:
 
-        return f"❌ OpenAI Error:\n\n{e}"
+        return (
+            "❌ OpenAI Error:\n\n"
+            f"{e}"
+        )
 
 
 # ==========================================================
@@ -501,21 +1114,31 @@ information through the official HDB or CPF website.*
 
 with st.sidebar:
 
-    st.header("💡 Suggested Questions")
+    st.header(
+        "💡 Suggested Questions"
+    )
 
     suggested_questions = [
 
+        "I am a single Singapore Citizen aged 36. What HDB flat options do I have?",
+
+        "I am single and 36. What flat size can I buy?",
+
         "What is an HFE Letter?",
 
-        "Am I eligible to buy a resale flat?",
+        "What CPF Housing Grants can a single receive?",
 
-        "What CPF Housing Grants are available?",
+        "Can a single buy a 4-room resale flat?",
 
-        "Can a single buy an HDB resale flat?",
+        "Can a single buy a 5-room resale flat?",
 
-        "Explain the HDB resale process."
+        "Can I use CPF to buy an HDB flat?",
 
+        "How much CPF can I use for housing?",
+
+        "Explain the HDB resale buying process."
     ]
+
 
     for question in suggested_questions:
 
@@ -524,24 +1147,28 @@ with st.sidebar:
             use_container_width=True
         ):
 
-            # Save user question
             st.session_state.messages.append({
                 "role": "user",
                 "content": question
             })
 
-            # Generate RAG response
-            response = generate_response(question)
 
-            # Save assistant response
+            response = generate_response(
+                question
+            )
+
+
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": response
             })
 
+
             st.rerun()
 
+
     st.divider()
+
 
     if st.button(
         "🗑️ Clear Chat",
@@ -552,14 +1179,23 @@ with st.sidebar:
 
         st.rerun()
 
+
     st.divider()
+
 
     st.success(
         "🟢 AI Status: OpenAI Connected"
     )
 
+
     st.info(
-        "📚 RAG Status: Knowledge Retrieval Enabled"
+        "📚 RAG Status: HDB / CPF Knowledge Retrieval Enabled"
+    )
+
+
+    st.caption(
+        "RAG uses a curated local knowledge base "
+        "sourced from official HDB and CPF information."
     )
 
 
@@ -583,31 +1219,61 @@ for message in st.session_state.messages:
 # ==========================================================
 
 prompt = st.chat_input(
-    "Ask a question about HDB or CPF..."
+    "Ask about HDB flats, grants, CPF or eligibility..."
 )
+
 
 if prompt:
 
+    # ------------------------------------------------------
     # Display user question
-    with st.chat_message("user"):
+    # ------------------------------------------------------
 
-        st.markdown(prompt)
+    with st.chat_message(
+        "user"
+    ):
 
-    # Save user question
+        st.markdown(
+            prompt
+        )
+
+
+    # ------------------------------------------------------
+    # Save user message
+    # ------------------------------------------------------
+
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
     })
 
+
+    # ------------------------------------------------------
     # Generate RAG response
-    answer = generate_response(prompt)
+    # ------------------------------------------------------
 
-    # Display assistant response
-    with st.chat_message("assistant"):
+    answer = generate_response(
+        prompt
+    )
 
-        st.markdown(answer)
 
-    # Save assistant response
+    # ------------------------------------------------------
+    # Display AI response
+    # ------------------------------------------------------
+
+    with st.chat_message(
+        "assistant"
+    ):
+
+        st.markdown(
+            answer
+        )
+
+
+    # ------------------------------------------------------
+    # Save AI response
+    # ------------------------------------------------------
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": answer
@@ -621,25 +1287,41 @@ if prompt:
 st.divider()
 
 with st.expander(
-    "📚 Official References"
+    "📚 Official Government References"
 ):
 
     st.markdown("""
-This chatbot is designed for educational purposes.
+The knowledge base used by this chatbot is based on publicly
+available information from official Singapore government
+sources.
 
-The local knowledge base is based on publicly available
-information from:
+### Housing & Development Board (HDB)
 
-- Housing & Development Board (HDB)
-- Central Provident Fund (CPF)
+- [HDB Homepage](https://www.hdb.gov.sg/homepage)
 
-Important eligibility requirements, housing grants and
-financial information should be verified using the
-official government websites.
+- [HDB - Singles](https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/singles)
 
-**HDB:** https://www.hdb.gov.sg
+- [HDB - CPF Housing Grant for Singles](https://www.hdb.gov.sg/buying-a-flat/flat-grant-and-loan-eligibility/singles/cpf-housing-grant)
 
-**CPF:** https://www.cpf.gov.sg/member
+- [HDB - Standard, Plus and Prime Housing Framework](https://www.hdb.gov.sg/buying-a-flat/bto-sbf-and-open-booking-of-flats/finding-a-new-flat/standard-plus-and-prime-housing-framework)
+
+
+### Central Provident Fund Board (CPFB)
+
+- [CPF Member Homepage](https://www.cpf.gov.sg/member)
+
+- [CPF - Using Your CPF to Buy a Home](https://www.cpf.gov.sg/member/home-ownership/using-your-cpf-to-buy-a-home)
+
+- [CPF Housing Usage Calculator](https://www.cpf.gov.sg/member/tools-and-services/calculators/cpf-housing-usage)
+
+
+### Important
+
+This chatbot is an educational prototype.
+
+Eligibility, housing grants, flat availability and financial
+rules may change. Users should obtain an HFE Letter and verify
+important information using official HDB and CPF services.
 """)
 
 
@@ -648,7 +1330,12 @@ official government websites.
 # ==========================================================
 
 st.success(
-    "OpenAI is connected. "
-    "RAG retrieval is enabled using the local HDB/CPF "
-    "knowledge base."
+    "🤖 OpenAI GPT-4.1-mini connected | "
+    "📚 Keyword-based RAG enabled | "
+    "🏠 HDB / CPF knowledge base enabled"
+)
+
+st.caption(
+    "GovAssist AI – Singapore HDB Smart Assistant | "
+    "Educational Capstone Project"
 )
